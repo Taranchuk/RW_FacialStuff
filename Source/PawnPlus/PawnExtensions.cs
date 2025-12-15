@@ -1,4 +1,4 @@
-﻿namespace PawnPlus
+namespace PawnPlus
 {
     using JetBrains.Annotations;
 
@@ -13,21 +13,15 @@
         public BodyPartRecord _leftFoot;
         public BodyPartRecord _rightHand;
         public BodyPartRecord _leftHand;
-        public BodyPartRecord _rightEye;
-        public BodyPartRecord _leftEye;
         public BodyPartRecord _rightEar;
         public BodyPartRecord _leftEar;
         public CompBodyAnimator _anim;
-        public CompFace _face;
         public Hediff _hediff;
 
-        public BodyProps(Hediff hediff, CompFace face, CompBodyAnimator anim, BodyPartRecord leftEye, BodyPartRecord rightEye, BodyPartRecord leftHand, BodyPartRecord rightHand, BodyPartRecord leftFoot, BodyPartRecord rightFoot)
+        public BodyProps(Hediff hediff, CompBodyAnimator anim, BodyPartRecord leftHand, BodyPartRecord rightHand, BodyPartRecord leftFoot, BodyPartRecord rightFoot)
         {
             this._hediff = hediff;
-            this._face = face;
             this._anim = anim;
-            this._leftEye = leftEye;
-            this._rightEye = rightEye;
             this._leftHand = leftHand;
             this._rightHand = rightHand;
             this._leftFoot = leftFoot;
@@ -73,26 +67,10 @@
             return compAnim != null;
         }
 
-        [CanBeNull]
-        public static CompFace GetCompFace([NotNull] this Pawn pawn)
-        {
-            return pawn.GetComp<CompFace>();
-        }
-
-        public static bool GetCompFace([NotNull] this Pawn pawn, [NotNull] out CompFace compFace)
-        {
-            compFace = pawn.GetComp<CompFace>();
-            return compFace != null;
-        }
         
         public static bool HasCompAnimator([NotNull] this Pawn pawn)
         {
             return pawn.def.HasComp(typeof(CompBodyAnimator));
-        }
-
-        public static bool HasCompFace([NotNull] this Pawn pawn)
-        {
-            return pawn.def.HasComp(typeof(CompFace));
         }
     }
 }

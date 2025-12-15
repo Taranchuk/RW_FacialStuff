@@ -36,15 +36,6 @@
         {
         }
 
-        public virtual List<Material> BodyBaseAt(
-            PawnGraphicSet graphics,
-            Rot4 bodyFacing,
-            RotDrawMode bodyDrawType,
-            MaxLayerToShow layer)
-        {
-            return new List<Material>();
-        }
-
         public virtual bool CarryStuff()
         {
             return false;
@@ -61,26 +52,26 @@
         public virtual void DrawAlienBodyAddons(bool portrait, Vector3 rootLoc, Quaternion quat, bool renderBody,
                                                 Rot4 rotation, bool invisible)
         {
-            // Just for the Aliens
         }
 
-        public virtual void DrawFeet(Quaternion bodyQuat, Quaternion footQuat, Vector3 rootLoc, bool portrait, float factor = 1f)
+        public virtual bool GetLimbWorldTransform(
+            string limbType,
+            Vector3 rootLoc,
+            Quaternion bodyQuat,
+            out Vector3 finalWorldPosition,
+            out Quaternion finalRotation)
         {
-        }
-
-        public virtual void DrawHands(Quaternion bodyQuat, Vector3 drawPos, bool portrait, Thing carriedThing = null,
-                                      bool flip = false, float factor = 1f)
-        {
-
+            finalWorldPosition = Vector3.zero;
+            finalRotation = Quaternion.identity;
+            return false;
         }
 
         public virtual void Initialize()
         {
         }
 
-        public virtual void Tick(Rot4 bodyFacing, PawnGraphicSet graphics)
+        public virtual void Tick(Rot4 bodyFacing)
         {
-            this.Graphics = graphics;
             this.BodyFacing = bodyFacing;
         }
 

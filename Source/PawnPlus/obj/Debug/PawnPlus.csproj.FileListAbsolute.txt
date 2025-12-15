@@ -1,0 +1,5 @@
+C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Mods\RW_FacialStuff\Source\PawnPlus\obj\Debug\PawnPlus.csproj.AssemblyReference.cache
+C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Mods\RW_FacialStuff\Source\PawnPlus\obj\Debug\PawnPlus.GeneratedMSBuildEditorConfig.editorconfig
+C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Mods\RW_FacialStuff\Source\PawnPlus\obj\Debug\PawnPlus.csproj.CoreCompileInputs.cache
+C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Mods\RW_FacialStuff\1.6\Assemblies\PawnPlus.dll
+C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Mods\RW_FacialStuff\Source\PawnPlus\obj\Debug\PawnPlus.dll

@@ -17,10 +17,7 @@
     {
         private const string modName = "Pawn Plus";
         public const string HardCoreSkFile = "/HardCore.SK";
-
-        // ReSharper disable once InconsistentNaming
-        // ReSharper disable once StyleCop.SA1307
-        [NotNull]
+        [System.Diagnostics.CodeAnalysis.NotNull]
         [SuppressMessage(
             "StyleCop.CSharp.MaintainabilityRules",
             "SA1401:FieldsMustBePrivate",
@@ -63,8 +60,6 @@
         {
             return modName;
         }
-
-        // ReSharper disable once MissingXmlDoc
         public override void WriteSettings()
         {
             settings?.Write();
@@ -81,27 +76,14 @@
             for (int i = 0; i < allPawns.Count; i++)
             {
                 Pawn pawn = allPawns[i];
-                if (!pawn.HasCompFace())
-                {
-                    continue;
-                }
-
-                pawn.Drawer.renderer.graphics.nakedGraphic = null;
+                pawn.Drawer.renderer.SetAllGraphicsDirty();
                 PortraitsCache.SetDirty(pawn);
             }
-
-            // Bug: Not working when called or retrieved inside a mod
-            // if (Find.ColonistBar != null)
-            // {
-            // Find.ColonistBar.MarkColonistsDirty();
-            // }
         }
 
         public static void SetMainButtons()
         {
             MainButtonDef button = DefDatabase<MainButtonDef>.GetNamedSilentFail("WalkAnimator");
-
-            // MainButtonDef button2 = DefDatabase<MainButtonDef>.GetNamedSilentFail("PoseAnimator");
             button.buttonVisible = settings.Develop;
         }
     }

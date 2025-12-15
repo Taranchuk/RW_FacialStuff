@@ -33,20 +33,12 @@
 
         #endregion Private Fields
 
-        public static bool IsOpen;
+        public new static bool IsOpen;
 
         #region Public Methods
-
-        // public static float horHeadOffset;
         protected override void DoBasicSettingsMenu(Listing_Standard listing)
         {
             base.DoBasicSettingsMenu(listing);
-            
-            // listing_Standard.CheckboxLabeled("Equipment", ref Equipment);
-
-            // listing_Standard.Label(horHeadOffset.ToString("N2") + " - " + verHeadOffset.ToString("N2"));
-            // horHeadOffset = listing_Standard.Slider(horHeadOffset, -1f, 1f);
-            // verHeadOffset = listing_Standard.Slider(verHeadOffset, -1f, 1f);
             listing.Label(CompAnim.BodyAnim.offCenterX.ToString("N2"));
             CompAnim.BodyAnim.offCenterX = listing.Slider(CompAnim.BodyAnim.offCenterX, -0.2f, 0.2f);
 
@@ -120,8 +112,6 @@
                                                                                                             filePath);
                                                                           },
                                                                           true));
-
-                // BodyAnimDef animDef = this.bodyAnimDef;
             }
 
             if (listing.ButtonText("Export PoseCycle"))
@@ -186,8 +176,6 @@
 
             this.DrawBodyStats("shoulderOffsetX", ref shoulderOffset.x, ref sliderRect);
             this.DrawBodyStats("shoulderOffsetZ", ref shoulderOffset.z, ref sliderRect);
-
-            // this.DrawBodyStats("shoulderFront",   ref front,            ref sliderRect);
             Vector3 hipOffset = CompAnim.BodyAnim.hipOffsets[rotation.AsInt];
             if (hipOffset.y == 0f)
             {
@@ -209,8 +197,6 @@
 
             this.DrawBodyStats("hipOffsetX", ref hipOffset.x, ref sliderRect);
             this.DrawBodyStats("hipOffsetZ", ref hipOffset.z, ref sliderRect);
-
-            // this.DrawBodyStats("hipFront",   ref hipFront,    ref sliderRect);
             if (GUI.changed)
             {
                 this.SetNewVector(rotation, shoulderOffset, CompAnim.BodyAnim.shoulderOffsets, front);
@@ -237,19 +223,6 @@
             {
                 GUI.BeginGroup(leftController);
                 Rect editorRect = new Rect(0f, 0f, leftController.width, 56f);
-
-                // Dictionary<int, float> keysFloats = new Dictionary<int, float>();
-
-                // // Get the next keyframe
-                // for (int i = 0; i < frames.Count; i++)
-                // {
-                // float? footPositionX = frames[i].FootPositionX;
-                // if (!footPositionX.HasValue)
-                // {
-                // continue;
-                // }
-                // keysFloats.Add(frames[i].KeyIndex, footPositionX.Value);
-                // }
                 List<int> framesAt;
                 List<PawnKeyframe> frames = PawnKeyframes;
                 PoseCycleDef cycleDef = EditorPoseCycle;
@@ -314,8 +287,6 @@
                                      cycleDef.HipOffsetHorizontalX,
                                      "HipOffsetHorizontalX",
                                      framesAt);
-
-                    // Quadruped
                 }
 
                 GUI.EndGroup();

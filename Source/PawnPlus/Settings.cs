@@ -23,11 +23,6 @@
         private MaxLayerToShow _layerInOwnedBed = MaxLayerToShow.Naked;
         private MaxLayerToShow _layerInPrivateRoom = MaxLayerToShow.OnSkin;
         private MaxLayerToShow _layerInRoom = MaxLayerToShow.Middle;
-        private bool _makeThemBlink = true;
-
-        private bool _mergeHair = true;
-
-        private bool _sameBeardColor;
         private bool _showBodyChange;
 
         private bool _showExtraParts = true;
@@ -36,12 +31,7 @@
 
         private bool _useCaching;
 
-        private bool _useHeadRotator = true;
-        private bool _useMouth = true;
         private bool _useNastyGrin;
-        private bool _useWeirdHairChoices = true;
-
-        private bool _useWrinkles = true;
 
         public bool UseHands => this._useHands;
         public bool UseFeet => this._useFeet;
@@ -82,9 +72,6 @@
         public MaxLayerToShow LayerInOwnedBed => this._layerInOwnedBed;
         public MaxLayerToShow LayerInPrivateRoom => this._layerInPrivateRoom;
         public MaxLayerToShow LayerInRoom => this._layerInRoom;
-        public bool MakeThemBlink => this._makeThemBlink;
-        public bool MergeHair => this._mergeHair;
-        public bool SameBeardColor => this._sameBeardColor;
         public bool ShowBodyChange => this._showBodyChange;
 
         public bool ShowExtraParts => this._showExtraParts;
@@ -96,13 +83,7 @@
         public bool UseDnaByFaction { get; } = false;
         public bool UseFreeWill { get; }
 
-        public bool UseHeadRotator => this._useHeadRotator;
-        public bool UseMouth => this._useMouth;
         public bool UseNastyGrin => this._useNastyGrin;
-        public bool UseWeirdHairChoices => this._useWeirdHairChoices;
-
-
-        public bool UseWrinkles => this._useWrinkles;
 
         public bool Develop => this.develop;
         public bool ShowRoyalHeadgear => this.showRoyalHeadgear;
@@ -131,46 +112,9 @@
             list.GapLine();
 
             list.CheckboxLabeled(
-                "Settings.UseHeadRotator".Translate(),
-                ref this._useHeadRotator,
-                "Settings.UseHeadRotatorTooltip".Translate());
-            list.CheckboxLabeled(
-                "Settings.MakeThemBlink".Translate(),
-                ref this._makeThemBlink,
-                "Settings.MakeThemBlinkTooltip".Translate());
-            list.CheckboxLabeled(
-                "Settings.UseMouth".Translate(),
-                ref this._useMouth,
-                "Settings.UseMouthTooltip".Translate());
-            list.CheckboxLabeled(
-                "Settings.UseWrinkles".Translate(),
-                ref this._useWrinkles,
-                "Settings.UseWrinklesTooltip".Translate());
-            list.CheckboxLabeled(
-                "Settings.MergeHair".Translate(),
-                ref this._mergeHair,
-                "Settings.MergeHairTooltip".Translate());
-            list.CheckboxLabeled(
-                "Settings.SameBeardColor".Translate(),
-                ref this._sameBeardColor,
-                "Settings.SameBeardColorTooltip".Translate());
-
-            // list.CheckboxLabeled(
-            // "Settings.HideHatWhileRoofed".Translate(),
-            // ref this.hideHatWhileRoofed,
-            // "Settings.HideHatWhileRoofedTooltip".Translate());
-            // list.CheckboxLabeled(
-            // "Settings.HideHatInBed".Translate(),
-            // ref this.hideHatInBed,
-            // "Settings.HideHatInBedTooltip".Translate());
-            list.CheckboxLabeled(
                 "Settings.ShowExtraParts".Translate(),
                 ref this._showExtraParts,
                 "Settings.ShowExtraPartsTooltip".Translate());
-            list.CheckboxLabeled(
-                "Settings.UseWeirdHairChoices".Translate(),
-                ref this._useWeirdHairChoices,
-                "Settings.UseWeirdHairChoicesTooltip".Translate());
             list.CheckboxLabeled(
                 "Settings.UseNastyGrin".Translate(),
                 ref this._useNastyGrin,
@@ -294,23 +238,6 @@
             list.CheckboxLabeled("Settings.Develop".Translate(),
                 ref this.develop,
                 "Settings.DevelopTooltip".Translate());
-
-
-
-            // list.CheckboxLabeled("Settings.ILikeBigHeads".Translate(), ref this.iLikeBigHeads, "Settings.ILikeBigHeadsTooltip".Translate());
-
-            // if (list.ButtonText("Reset"))
-            // {
-            // Controller.settings = new Settings();
-            // }
-
-
-            // list.CheckboxLabeled(
-            // "Settings.UseFreeWill".Translate(),
-            // ref this.useFreeWill,
-            // "Settings.UseFreeWillTooltip".Translate());
-
-            // this.useDNAByFaction = Toggle(this.useDNAByFaction, "Settings.UseDNAByFaction".Translate());
             if (Event.current.type == EventType.Layout)
             {
                 this.viewHeight = list.CurHeight;
@@ -322,27 +249,6 @@
             {
                 this.Mod.WriteSettings();
             }
-
-            // FlexibleSpace();
-            // BeginVertical();
-            // if (Button("Settings.Apply".Translate()))
-            // {
-            // foreach (Pawn pawn in PawnsFinder.AllMapsAndWorld_Alive)
-            // {
-            // if (pawn.RaceProps.Humanlike)
-            // {
-            // CompFace faceComp = pawn.TryGetComp<CompFace>();
-            // if (faceComp != null)
-            // {
-            // this.WriteSettings();
-            // faceComp.sessionOptimized = false;
-            // pawn.PawnDrawer.renderer.graphics.ResolveAllGraphics();
-            // }
-            // }
-            // }
-            // }
-            // EndVertical();
-            // FlexibleSpace();
         }
 
         public override void ExposeData()
@@ -351,25 +257,16 @@
 
             Scribe_Values.Look(ref this.develop, "develop", false, true);
             Scribe_Values.Look(ref this._hideShellWhileRoofed, "hideShellWhileRoofed", false, true);
-            Scribe_Values.Look(ref this._useWrinkles, "useWrinkles", false, true);
-            Scribe_Values.Look(ref this._useMouth, "useMouth", false, true);
             Scribe_Values.Look(ref this._useHands, "useHands");
             Scribe_Values.Look(ref this._useFeet, "useFeet");
             Scribe_Values.Look(ref this._usePaws, "_usePaws");
             Scribe_Values.Look(ref this.showRoyalHeadgear, "showRoyalHeadgear");
-            Scribe_Values.Look(ref this._mergeHair, "mergeHair", false, true);
             Scribe_Values.Look(ref this._hideHatWhileRoofed, "hideHatWhileRoofed", false, true);
             Scribe_Values.Look(ref this._hideHatInBed, "hideHatInBed", false, true);
             Scribe_Values.Look(ref this._showExtraParts, "showExtraParts", false, true);
-            Scribe_Values.Look(ref this._useWeirdHairChoices, "useWeirdHairChoices", false, true);
             Scribe_Values.Look(ref this._filterHats, "filterHats", false, true);
-            Scribe_Values.Look(ref this._sameBeardColor, "sameBeardColor", false, true);
-
-            // Scribe_Values.Look(ref this.useDNAByFaction, "useDNAByFaction", false, true);
-            Scribe_Values.Look(ref this._makeThemBlink, "makeThemBlink", false, true);
             Scribe_Values.Look(ref this._useCaching, "useCaching", false, true);
             Scribe_Values.Look(ref this._useNastyGrin, "useNastyGrin", false, true);
-            Scribe_Values.Look(ref this._useHeadRotator, "useHeadRotator", false, true);
             Scribe_Values.Look(ref this._showBodyChange, "showBodyChange", false, true);
             Scribe_Values.Look(ref this._showGenderAgeChange, "showGenderAgeChange", false, true);
 

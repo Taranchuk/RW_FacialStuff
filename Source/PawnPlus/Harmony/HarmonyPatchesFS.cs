@@ -29,63 +29,33 @@
             Harmony harmony = new Harmony("rimworld.pawnplus.mod");
             harmony.PatchAll(Assembly.GetExecutingAssembly());
             Log.Message("PP Initialized");
-            Log.Message("PP patching ResolveAllGraphics");
-            harmony.Patch(
-                AccessTools.Method(typeof(PawnGraphicSet), nameof(PawnGraphicSet.ResolveAllGraphics)),
-                null,
-                new HarmonyMethod(typeof(HarmonyPatchesFS), nameof(ResolveAllGraphics_Postfix)));
-
-            Log.Message("PP patching ResolveApparelGraphics");
-            harmony.Patch(
-                AccessTools.Method(typeof(PawnGraphicSet), nameof(PawnGraphicSet.ResolveApparelGraphics)),
-                null,
-                new HarmonyMethod(typeof(HarmonyPatchesFS), nameof(ResolveApparelGraphics_Postfix)));
+            
             
             Log.Message("PP patching DrawEquipmentAiming");
             harmony.Patch(
-                AccessTools.Method(typeof(PawnRenderer), nameof(PawnRenderer.DrawEquipmentAiming)),
+                AccessTools.Method(typeof(PawnRenderUtility), nameof(PawnRenderUtility.DrawEquipmentAiming)),
                 new HarmonyMethod(typeof(HarmonyPatchesFS), nameof(DrawEquipmentAiming_Prefix)),
                 null,
                 new HarmonyMethod(typeof(HarmonyPatchesFS), nameof(DrawEquipmentAiming_Transpiler)));
 
-            Log.Message("PP patching DrawEquipmentAiming");
-            harmony.Patch(AccessTools.Method(typeof(PawnRenderer), "DrawHeadHair"), new HarmonyMethod(
-                typeof(HarmonyPatchesFS),
-                nameof(DrawHeadHair_Prefix)), null);
-                
-
-            Log.Message("PP patching DrawCarriedThing");
-            harmony.Patch(
-                AccessTools.Method(typeof(PawnRenderer), "DrawCarriedThing", new[]{ typeof(Vector3)}),
-                null,
-                null,
-                new HarmonyMethod(typeof(HarmonyPatchesFS), nameof(DrawCarriedThing_Transpiler)));
-          /*
-            Log.Message("PP patching RenderPawnInternal");
-            harmony.Patch(
-                AccessTools.Method(typeof(PawnRenderer), "RenderPawnInternal", new Type[]{ typeof(Vector3), typeof(float), typeof(bool), typeof(Rot4), typeof(RotDrawMode), typeof(PawnRenderFlags) }),
-                null,
-                null,
-                new HarmonyMethod(typeof(HarmonyPatch_PawnRenderer), nameof(HarmonyPatch_PawnRenderer.Transpiler)));
-            */
             Log.Message("PP patching DirtyCache");
             harmony.Patch(
                 AccessTools.Method(typeof(HediffSet), nameof(HediffSet.DirtyCache)),
                 null,
                 new HarmonyMethod(typeof(HarmonyPatchesFS), nameof(DirtyCache_Postfix)));
             
+            Log.Message("PP patching RenderPawnInternal");
+            harmony.Patch(
+                AccessTools.Method(typeof(PawnRenderer), nameof(PawnRenderer.RenderPawnInternal)),
+                new HarmonyMethod(typeof(HarmonyPatch_PawnRenderer_Internal), nameof(HarmonyPatch_PawnRenderer_Internal.Prefix)));
+
+            harmony.Patch(
+                AccessTools.Method(typeof(PawnRenderer), nameof(PawnRenderer.SetAllGraphicsDirty)),
+                null,
+                new HarmonyMethod(typeof(HarmonyPatchesFS), nameof(SetAllGraphicsDirty_Postfix)));
+            
             Log.Message(
                 "Pawn Plus: successfully completed " + harmony.GetPatchedMethods().Count() + " patches with harmony.");
-        }
-
-        public static bool IsBeardNotHair(this Def def)
-        {
-            if (def.defName.StartsWith("VHE_Beard"))
-            {
-                return true;
-            }
-
-            return false;
         }
 
         #endregion Public Constructors
@@ -115,38 +85,6 @@
 
         #region Public Methods
         
-        public static void CheckAndDrawHands(Thing carriedThing, Vector3 thingVector3, bool flip, Pawn pawn, bool thingBehind)
-        {
-            if(pawn.RaceProps.Animal)
-            {
-                carriedThing.DrawAt(thingVector3, flip);
-                return;
-            }
-
-            if(!pawn.GetCompAnim(out CompBodyAnimator compAnim))
-            {
-                carriedThing.DrawAt(thingVector3, flip);
-                return;
-            }
-
-            bool showHands = compAnim.Props.bipedWithHands && Controller.settings.UseHands;
-            if(!showHands)
-            {
-                carriedThing.DrawAt(thingVector3, flip);
-                return;
-            }
-
-            // Modify the drawPos to appear behind a pawn if facing North, in case vanilla didn't
-            if(!thingBehind && pawn.Rotation == Rot4.North)
-            {
-                thingVector3.y -= Offsets.YOffset_CarriedThing * 2;
-            }
-
-            thingVector3.y += compAnim.DrawOffsetY;
-            float factor = pawn.GetBodysizeScaling();
-
-            compAnim.DrawHands(Quaternion.identity, thingVector3, false, carriedThing, flip, factor);
-        }
 
         public static void DirtyCache_Postfix(HediffSet __instance)
         {
@@ -155,21 +93,16 @@
                 return;
             }
 
-            Pawn pawn = __instance.pawn; // Traverse.Create(__instance).Field("pawn").GetValue<Pawn>();
+            Pawn pawn = __instance.pawn;
 
             if(pawn == null || !pawn.Spawned || pawn.Map == null)
             {
                 return;
             }
 
-            if(!pawn.GetCompFace(out CompFace compFace))
-            {
-                return;
-            }
-
             if(!pawn.GetCompAnim().Deactivated)
             {
-                pawn.Drawer.renderer.graphics.nakedGraphic = null;
+                pawn.Drawer.renderer.SetAllGraphicsDirty();
                 PortraitsCache.SetDirty(pawn);
             }
 
@@ -202,13 +135,11 @@
             }
 
             DamageDef
-            damageDef = busy.verb.GetDamageDef(); // ThingUtility.PrimaryMeleeWeaponDamageType(primaryEq.parent.def);
+            damageDef = busy.verb.GetDamageDef();
             if(damageDef == null)
             {
                 return;
             }
-
-            // total weapon angle change during animation sequence
             int totalSwingAngle = 0;
             Vector3 currentOffset = animator.Jitterer.CurrentOffset;
 
@@ -219,8 +150,6 @@
             if(damageDef == DamageDefOf.Stab)
             {
                 weaponPosition += currentOffset;
-
-                // + new Vector3(0, 0, Mathf.Pow(this.CompFace.Jitterer.CurrentOffset.magnitude, 0.25f))/2;
             }
             else if(damageDef == DamageDefOf.Blunt || damageDef == DamageDefOf.Cut)
             {
@@ -233,23 +162,17 @@
             }
         }
 
-        // private static float RecoilMax = -0.15f;
-        // private static  Vector3 curOffset = new Vector3(0f, 0f, 0f);
-        // public static void AddOffset(float dist, float dir)
-        // {
-        // curOffset += Quaternion.AngleAxis(dir, Vector3.up) * Vector3.forward * dist;
-        // if (curOffset.sqrMagnitude > RecoilMax        * RecoilMax)
-        // {
-        // curOffset *= RecoilMax / curOffset.magnitude;
-        // }
-        // }
         public static void DoWeaponOffsets(
-            Pawn pawn, 
             Thing eq, 
             ref Vector3 drawLoc, 
             ref float weaponAngle,
             ref Mesh weaponMesh)
         {
+            Pawn pawn = (eq as ThingWithComps)?.holdingOwner?.Owner as Pawn;
+            if (pawn == null)
+            {
+                return;
+            }
             CompProperties_WeaponExtensions extensions = eq.def.GetCompProperties<CompProperties_WeaponExtensions>();
 
             bool flipped = weaponMesh == MeshPool.plane10Flip;
@@ -276,8 +199,6 @@
                                          out Vector3 weaponPosOffset,
                                          out bool aiming,
                                          flipped);
-
-                // weapon angle and position offsets based on current attack keyframes sequence
                 DoAttackAnimationOffsetsWeapons(
                     pawn, 
                     ref weaponAngle, 
@@ -328,25 +249,12 @@
 
                         break;
                 }
-
-                // // fix the reset to default pos is target is changing
-                // bool isAimAngle = (Math.Abs(aimAngle - angleStanding) <= 0.1f);
-                // bool isAimAngleFlipped = (Math.Abs(aimAngle - angleStandingFlipped) <= 0.1f);
-                // if (aiming && (isAimAngle || isAimAngleFlipped))
-                // {
-                // // use the last known position to avoid 1 frame flipping when target changes
-                // drawLoc = animator.lastPosition[(int)equipment];
-                // weaponAngle = animator.lastWeaponAngle;
-                // }
                 {
-                    // else
                     animator.LastPosition[(int)equipment] = drawLoc;
                     animator.LastWeaponAngle = weaponAngle;
                     animator.MeshFlipped = flipped;
                 }
             }
-
-            // Now the remaining hands if possible
             if(animator.Props.bipedWithHands && Controller.settings.UseHands)
             {
                 SetPositionsForHandsOnWeapons(
@@ -360,14 +268,15 @@
 
 
         public static void DrawEquipmentAiming_Prefix(
-            PawnRenderer __instance, 
             Thing eq, 
             Vector3 drawLoc,
             ref float aimAngle)
         {
-            Pawn pawn = __instance.graphics.pawn;
-
-            // Flip the angle for north
+            Pawn pawn = (eq as ThingWithComps)?.holdingOwner?.Owner as Pawn;
+            if (pawn == null)
+            {
+                return;
+            }
             if(pawn.Rotation == Rot4.North && aimAngle == angleStanding)
             {
                 aimAngle = angleStandingFlipped;
@@ -404,7 +313,6 @@
             angleChange = CalcShortestRot(startAngle, endAngle);
             if(Mathf.Abs(angleChange) > 6f)
             {
-                // no tween for flipping
                 bool x = Mathf.Abs(animator.LastAimAngle - angleStanding) < 3f &&
                          Mathf.Abs(aimAngle - angleStandingFlipped) < 3f;
                 bool y = Mathf.Abs(animator.LastAimAngle - angleStandingFlipped) < 3f &&
@@ -422,15 +330,6 @@
             animator.LastAimAngle = aimAngle;
         }
 
-        public static bool DrawHeadHair_Prefix(PawnRenderer __instance)
-        {
-            if (__instance.graphics.pawn.GetCompFace() != null && !__instance.graphics.pawn.IsChild())
-            {
-                return false;
-            }
-
-            return true;
-        }
         public static IEnumerable<CodeInstruction> DrawEquipmentAiming_Transpiler(
             IEnumerable<CodeInstruction> instructions,
             ILGenerator ilGen)
@@ -438,18 +337,21 @@
             List<CodeInstruction> instructionList = instructions.ToList();
 
             int index = instructionList.FindIndex(x => x.opcode == OpCodes.Ldloc_0);
+            
+            if (index < 0)
+            {
+                Log.Error("PawnPlus: Could not find ldloc.0 instruction in DrawEquipmentAiming method");
+                return instructionList;
+            }
+
             List<Label> labels = instructionList[index].labels;
             instructionList[index].labels = new List<Label>();
             instructionList.InsertRange(index, new List<CodeInstruction>
             {
-                // DoCalculations(Pawn pawn, Thing eq, ref Vector3 drawLoc, ref float weaponAngle, float aimAngle)
                 new CodeInstruction(OpCodes.Ldarg_0),
-                new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(PawnRenderer), "pawn")), // pawn
-                new CodeInstruction(OpCodes.Ldarg_1), // Thing
-                new CodeInstruction(OpCodes.Ldarga, 2), // drawLoc
-                new CodeInstruction(OpCodes.Ldloca_S, 1), // weaponAngle
-                // new CodeInstruction(OpCodes.Ldarg_3), // aimAngle
-                new CodeInstruction(OpCodes.Ldloca_S, 0), // Mesh, loaded as ref to not trigger I Love Big Guns
+                new CodeInstruction(OpCodes.Ldarga_S, 1),
+                new CodeInstruction(OpCodes.Ldarga_S, 2),
+                new CodeInstruction(OpCodes.Ldloca_S, 0),
                 new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(HarmonyPatchesFS), nameof(DoWeaponOffsets))),
             });
             instructionList[index].labels = labels;
@@ -462,8 +364,6 @@
                 LoadedModManager.RunningModsListForReading.Any(x => x.PackageId == "dylan.csl") &&
                 pawn.RaceProps.Humanlike && pawn.ageTracker.CurLifeStage.bodySizeFactor < 1f;
         }
-
-        // From CSL mod
         public static float GetBodysizeScaling(this Pawn pawn)
         {
             float bodySizeFactor = pawn.ageTracker.CurLifeStage.bodySizeFactor;
@@ -506,59 +406,6 @@
             return num * num2;
         }
 
-        public static IEnumerable<CodeInstruction> DrawCarriedThing_Transpiler(
-            IEnumerable<CodeInstruction> instructions, 
-            ILGenerator ilGen)
-        {
-            List<CodeInstruction> instructionList = instructions.ToList();
-
-            MethodInfo drawAtMethod = AccessTools.Method(typeof(Thing), nameof(Thing.DrawAt));
-
-            int indexDrawAt = instructionList.FindIndex(x => x.opcode == OpCodes.Callvirt && (MethodInfo)x.operand == drawAtMethod);
-
-            instructionList.RemoveAt(indexDrawAt);
-            instructionList.InsertRange(indexDrawAt, new List<CodeInstruction>
-            {
-                // carriedThing.DrawAt(vector, flip);
-                // carriedThing = ldloc.1
-                // vector = ldloc.2
-                // bool flip = ldloc.s 4
-                new CodeInstruction(OpCodes.Ldarg_0), // this.PawnRenderer
-                new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(PawnRenderer), "pawn")), // pawn
-                new CodeInstruction(OpCodes.Ldloc_3), // flag
-                new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(HarmonyPatchesFS), nameof(CheckAndDrawHands)))
-            });
-            return instructionList;
-        }
-
-        public static void ResolveAllGraphics_Postfix(PawnGraphicSet __instance)
-        {
-            // Unity engine crashes when trying to load mesh while loading. This also includes DefsLoaded in ModBase implementation.
-            // RenderParamManager.ReadFromRenderDefs() loads meshes so it should be called here instead.
-            if(!RenderParamManager.Initialized)
-			{
-                RenderParamManager.ReadFromRenderDefs();
-            }
-
-            Pawn pawn = __instance.pawn;
-            if(pawn == null)
-            {
-                return;
-            }
-            
-            pawn.GetCompAnim()?.PawnBodyGraphic?.Initialize();
-                        
-            __instance.ClearCache();
-            pawn.GetComp<CompBodyAnimator>()?.ClearCache();
-            
-            pawn.GetComp<CompFace>()?.OnResolveGraphics(__instance);
-        }
-
-        public static void ResolveApparelGraphics_Postfix(PawnGraphicSet __instance)
-        {
-            Pawn pawn = __instance.pawn;
-            pawn.GetComp<CompFace>()?.OnResolveApparelGraphics(__instance);
-        }
 
         public static void SetPositionsForHandsOnWeapons(
             Vector3 weaponPosition, 
@@ -568,7 +415,6 @@
             CompBodyAnimator animator, 
             float sizeMod)
         {
-            // Prepare everything for DrawHands, but don't draw
             if(compWeaponExtensions == null)
             {
                 return;
@@ -576,9 +422,6 @@
 
             animator.FirstHandPosition = compWeaponExtensions.RightHandPosition;
             animator.SecondHandPosition = compWeaponExtensions.LeftHandPosition;
-
-            // Only put the second hand on when aiming or not moving => free left hand for running
-            // bool leftOnWeapon = true;// aiming || !animator.IsMoving;
             if(animator.FirstHandPosition != Vector3.zero)
             {
                 float x = animator.FirstHandPosition.x;
@@ -589,11 +432,6 @@
                     x *= -1f;
                     y *= -1f;
                 }
-
-                // if (pawn.Rotation == Rot4.North)
-                // {
-                // y *= -1f;
-                // }
                 x *= sizeMod;
                 z *= sizeMod;
                 animator.FirstHandPosition =
@@ -613,25 +451,13 @@
 
                 x2 *= sizeMod;
                 z2 *= sizeMod;
-
-                // if (pawn.Rotation == Rot4.North)
-                // {
-                // y2 *= -1f;
-                // }
                 animator.SecondHandPosition =
                 weaponPosition + new Vector3(x2, y2, z2).RotatedBy(weaponAngle);
             }
-
-            // Swap left and right hand position when flipped
             animator.WeaponQuat = Quaternion.AngleAxis(weaponAngle, Vector3.up);
         }
-        
-        // If the return value is positive, then rotate to the left. Else,
-        // rotate to the right.
         private static float CalcShortestRot(float from, float to)
         {
-            // If from or to is a negative, we have to recalculate them.
-            // For an example, if from = -45 then from(-45) + 360 = 315.
             if(from < 0)
             {
                 from += 360;
@@ -641,20 +467,14 @@
             {
                 to += 360;
             }
-
-            // Do not rotate if from == to.
             if(from == to ||
                 from == 0 && to == 360 ||
                 from == 360 && to == 0)
             {
                 return 0;
             }
-
-            // Pre-calculate left and right.
             float left = (360 - from) + to;
             float right = from - to;
-
-            // If from < to, re-calculate left and right.
             if(from < to)
             {
                 if(to > 0)
@@ -668,8 +488,6 @@
                     right = to - from;
                 }
             }
-
-            // Determine the shortest direction.
             return ((left <= right) ? left : (right * -1));
         }
         
@@ -686,8 +504,6 @@
             {
                 weaponPosOffset.y = -Offsets.YOffset_Head - Offsets.YOffset_CarriedThing;
             }
-
-            // Use y for the horizontal position. too lazy to add even more vectors
             bool isHorizontal = pawn.Rotation.IsHorizontal;
             aiming = pawn.Aiming();
             Vector3 extOffset;
@@ -718,8 +534,6 @@
                 }
 
                 weaponPosOffset += extOffset;
-
-                // flip x position offset
                 if(pawn.Rotation != Rot4.South)
                 {
                     weaponPosOffset.x *= -1;
@@ -737,5 +551,9 @@
         }
 
         #endregion Public Methods
+
+        public static void SetAllGraphicsDirty_Postfix(PawnRenderer __instance)
+        {
+        }
     }
 }

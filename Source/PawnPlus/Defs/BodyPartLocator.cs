@@ -1,18 +1,18 @@
-﻿namespace PawnPlus.Defs
+namespace PawnPlus.Defs
 {
     using System.Linq;
 
     using Verse;
 
     public class BodyPartLocator
-	{
-		private BodyDef bodyDef;
-
-		private BodyPartDef bodyPartDef;
-
-		private string bodyPartLabel;
-		
-		[Unsaved()]
+    {
+#pragma warning disable 0649
+        private BodyDef bodyDef;
+        private BodyPartDef bodyPartDef;
+        private string bodyPartLabel;
+#pragma warning restore 0649
+    	
+    	[Unsaved()]
 		private BodyPartRecord _resolvedBodyPartRecord;
 
 		[Unsaved()]

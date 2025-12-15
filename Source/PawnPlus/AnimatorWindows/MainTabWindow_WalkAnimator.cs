@@ -30,7 +30,7 @@
 
         #region Public Properties
 
-        [NotNull]
+        [System.Diagnostics.CodeAnalysis.NotNull]
         public WalkCycleDef EditorWalkcycle { get; private set; } = WalkCycleDefOf.Biped_Walk;
 
         protected override void SetKeyframes()
@@ -42,8 +42,6 @@
         #endregion Public Properties
 
         #region Private Properties
-
-        // public static float verHeadOffset;
         #endregion Private Properties
 
         #region Public Methods
@@ -85,8 +83,6 @@
         public override void PreOpen()
         {
             base.PreOpen();
-
-            // IsMoving = true;
         }
 
         protected override void BuildEditorCycle()
@@ -94,19 +90,9 @@
             base.BuildEditorCycle();
             GameComponent_PawnPlus.BuildWalkCycles(this.EditorWalkcycle);
         }
-
-        // public static float horHeadOffset;
         protected override void DoBasicSettingsMenu(Listing_Standard listing)
         {
             base.DoBasicSettingsMenu(listing);
-
-            // listing.CheckboxLabeled("Moving", ref IsMoving);
-
-            // listing_Standard.CheckboxLabeled("Equipment", ref Equipment);
-
-            // listing_Standard.Label(horHeadOffset.ToString("N2") + " - " + verHeadOffset.ToString("N2"));
-            // horHeadOffset = listing_Standard.Slider(horHeadOffset, -1f, 1f);
-            // verHeadOffset = listing_Standard.Slider(verHeadOffset, -1f, 1f);
             listing.Label(this.BodyAnimDef.offCenterX.ToString("N2"));
             this.BodyAnimDef.offCenterX = listing.Slider(this.BodyAnimDef.offCenterX, -0.2f, 0.2f);
 
@@ -199,8 +185,6 @@
                                 this.filePathBodyanim);
                         },
                         true));
-
-                // BodyAnimDef animDef = this.bodyAnimDef;
             }
 
             if (listing.ButtonText("Export WalkCycle"))
@@ -252,8 +236,6 @@
                 rect1 = new Rect(rect) { y = rect.y - moved };
                 rect2 = new Rect(rect1) { y = rect1.yMax };
             }
-
-            // TODO commented out for rewrite
             /*GUI.DrawTexture(rect1, FaceTextures.BackgroundAnimTex);
             GUI.DrawTexture(rect2, FaceTextures.BackgroundAnimTex);*/
             GUI.EndGroup();
@@ -262,10 +244,6 @@
         protected override void DrawBodySettingsEditor(Rot4 rotation)
         {
             Rect sliderRect = new Rect(0, 0, this.SliderWidth, 40f);
-
-            // this.DrawBodyStats("legLength", ref bodyAnimDef.legLength, ref sliderRect);
-            // this.DrawBodyStats("hipOffsetVerticalFromCenter",
-            // ref bodyAnimDef.hipOffsetVerticalFromCenter, ref sliderRect);
             Vector2 headOffset = this.BodyAnimDef.headOffset;
             this.DrawBodyStats("headOffsetX", ref headOffset.x, ref sliderRect);
             this.DrawBodyStats("headOffsetY", ref headOffset.y, ref sliderRect);
@@ -293,8 +271,6 @@
 
             this.DrawBodyStats("shoulderOffsetX", ref shoulderOffset.x, ref sliderRect);
             this.DrawBodyStats("shoulderOffsetZ", ref shoulderOffset.z, ref sliderRect);
-
-            // this.DrawBodyStats("shoulderFront",   ref front,            ref sliderRect);
             Vector3 hipOffset = this.BodyAnimDef.hipOffsets[rotation.AsInt];
             if (hipOffset.y == 0f)
             {
@@ -316,8 +292,6 @@
 
             this.DrawBodyStats("hipOffsetX", ref hipOffset.x, ref sliderRect);
             this.DrawBodyStats("hipOffsetZ", ref hipOffset.z, ref sliderRect);
-
-            // this.DrawBodyStats("hipFront",   ref hipFront,    ref sliderRect);
             if (GUI.changed)
             {
                 this.BodyAnimDef.headOffset = headOffset;
@@ -345,19 +319,6 @@
             {
                 GUI.BeginGroup(leftController);
                 Rect editorRect = new Rect(0f, 0f, leftController.width, 56f);
-
-                // Dictionary<int, float> keysFloats = new Dictionary<int, float>();
-
-                // // Get the next keyframe
-                // for (int i = 0; i < frames.Count; i++)
-                // {
-                // float? footPositionX = frames[i].FootPositionX;
-                // if (!footPositionX.HasValue)
-                // {
-                // continue;
-                // }
-                // keysFloats.Add(frames[i].KeyIndex, footPositionX.Value);
-                // }
                 List<int> framesAt;
                 List<PawnKeyframe> frames = PawnKeyframes;
                 WalkCycleDef walkcycle = this.EditorWalkcycle;
@@ -403,21 +364,7 @@
                                      walkcycle.HipOffsetHorizontalX,
                                      "HipOffsetHorizontalX",
                                      framesAt);
-
-                    // Quadruped
                 }
-
-                // else
-                // {
-                // framesAt = (from keyframe in frames
-                // where keyframe.FootPositionVerticalZ.HasValue
-                // select keyframe.KeyIndex).ToList();
-                // this.SetPosition(
-                // ref thisFrame.FootPositionVerticalZ,
-                // ref editorRect,
-                // EditorWalkcycle.FootPositionVerticalZ,
-                // "FootPosVerticalY", framesAt);
-                // }
                 GUI.EndGroup();
 
                 GUI.BeginGroup(rightController);
@@ -493,35 +440,7 @@
                 {
                     if (this.CompAnim.BodyAnim.bipedWithHands)
                     {
-                        // framesAt = (from keyframe in frames
-                        // where keyframe.HandsSwingPosVertical.HasValue
-                        // select keyframe.KeyIndex).ToList();
-                        // this.SetPosition(
-                        // ref thisFrame.HandsSwingPosVertical,
-                        // ref editorRect,
-                        // EditorWalkcycle.HandsSwingPosVertical,
-                        // "HandsSwingPosVertical", framesAt);
                     }
-
-                    // framesAt = (from keyframe in frames
-                    // where keyframe.FrontPawPositionVerticalZ.HasValue
-                    // select keyframe.KeyIndex).ToList();
-                    // if (this.CompAnim.Props.quadruped)
-                    // {
-                    // this.SetPosition(
-                    // ref thisFrame.FrontPawPositionVerticalZ,
-                    // ref editorRect,
-                    // EditorWalkcycle.FrontPawPositionVerticalZ,
-                    // "FrontPawPosVerticalY", framesAt);
-                    // }
-                    // framesAt = (from keyframe in frames
-                    // where keyframe.BodyOffsetVerticalZ.HasValue
-                    // select keyframe.KeyIndex).ToList();
-                    // this.SetPosition(
-                    // ref thisFrame.BodyOffsetVerticalZ,
-                    // ref editorRect,
-                    // EditorWalkcycle.BodyOffsetVerticalZ,
-                    // "BodyOffsetVerticalZ", framesAt);
                     framesAt = (from keyframe in frames
                                 where keyframe.BodyAngleVertical.HasValue
                                 select keyframe.KeyIndex).ToList();
@@ -580,7 +499,6 @@
         protected override void FindRandomPawn()
         {
             {
-                // if (Pawn == null)
                 base.FindRandomPawn();
 
                 BodyAnimDef anim = this.CompAnim.BodyAnim;

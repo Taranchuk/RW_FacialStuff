@@ -32,8 +32,6 @@
 
         public float JitterMax = 0.35f;
         public readonly Vector3Tween[] Vector3Tweens = new Vector3Tween[(int)TweenThing.Max];
-
-        // [CanBeNull] public PawnPartsTweener PartTweener;
         [CanBeNull] public PawnBodyGraphic PawnBodyGraphic;
 
         [CanBeNull] public PoseCycleDef PoseCycle;
@@ -49,9 +47,7 @@
 
         #region Private Fields
 
-        private static FieldInfo _infoJitterer;
-
-        [NotNull] private readonly List<Material> _cachedNakedMatsBodyBase = new List<Material>();
+        [System.Diagnostics.CodeAnalysis.NotNull] private readonly List<Material> _cachedNakedMatsBodyBase = new List<Material>();
 
         private readonly List<Material> _cachedSkinMatsBodyBase = new List<Material>();
 
@@ -71,10 +67,8 @@
         {
             get
             {
-                // RoomGroup theRoomGroup = TheRoom?.Group;
                 if(TheRoom != null && !TheRoom.UsesOutdoorTemperature)
                 {
-                    // Pawn is indoors
                     return !Pawn.Drafted || !Controller.settings.IgnoreWhileDrafted;
                 }
 
@@ -82,9 +76,9 @@
             }
         }
 
-        public JitterHandler Jitterer => GetHiddenValue(typeof(Pawn_DrawTracker), Pawn.Drawer, "jitterer", _infoJitterer) as JitterHandler;
+        public JitterHandler Jitterer => Pawn.Drawer.jitterer;
 
-        [NotNull]
+        [System.Diagnostics.CodeAnalysis.NotNull]
         public Pawn Pawn => parent as Pawn;
 
         public List<PawnBodyDrawer> PawnBodyDrawers { get; private set; }
@@ -123,16 +117,6 @@
 
         #region Public Methods
 
-        public static object GetHiddenValue(Type type, object __instance, string fieldName, [CanBeNull] FieldInfo info)
-        {
-            if(info == null)
-            {
-                info = type.GetField(fieldName, GenGeneric.BindingFlagsAll);
-            }
-
-            return info?.GetValue(__instance);
-        }
-
         public void ApplyBodyWobble(ref Vector3 rootLoc, ref Vector3 footPos, ref Quaternion quat)
         {
             if(PawnBodyDrawers == null)
@@ -148,41 +132,12 @@
                 i++;
             }
         }
-
-        // Verse.PawnGraphicSet
         public void ClearCache()
         {
             _cachedSkinMatsBodyBaseHash = -1;
             _cachedNakedMatsBodyBaseHash = -1;
         }
         
-        [SuppressMessage("ReSharper", "PossibleNullReferenceException")]
-        public void DrawFeet(Quaternion bodyQuat, Quaternion footQuat, Vector3 rootLoc, bool portrait, float factor = 1f)
-        {
-            if(!PawnBodyDrawers.NullOrEmpty())
-            {
-                int i = 0;
-                int count = PawnBodyDrawers.Count;
-                while(i < count)
-                {
-                    PawnBodyDrawers[i].DrawFeet(bodyQuat, footQuat, rootLoc, portrait, factor);
-                    i++;
-                }
-            }
-        }
-
-        [SuppressMessage("ReSharper", "PossibleNullReferenceException")]
-        public void DrawHands(Quaternion bodyQuat, Vector3 rootLoc, bool portrait, Thing carriedThing = null, bool flip = false, float factor = 1f)
-        {
-            if (PawnBodyDrawers.NullOrEmpty()) return;
-            int i = 0;
-            int count = PawnBodyDrawers.Count;
-            while(i < count)
-            {
-                PawnBodyDrawers[i].DrawHands(bodyQuat, rootLoc, portrait, carriedThing, flip, factor);
-                i++;
-            }
-        }
 
         public void InitializePawnDrawer()
         {
@@ -220,32 +175,38 @@
             {
                 _cachedNakedMatsBodyBase.Clear();
                 _cachedNakedMatsBodyBaseHash = num;
-                PawnGraphicSet graphics = Pawn.Drawer.renderer.graphics;
+                
+                var bodyGraphic = Pawn.Drawer.renderer.BodyGraphic;
+                if (bodyGraphic == null) return _cachedNakedMatsBodyBase;
+
                 if(bodyCondition == RotDrawMode.Fresh)
                 {
-                    _cachedNakedMatsBodyBase.Add(graphics.nakedGraphic.MatAt(facing));
+                    _cachedNakedMatsBodyBase.Add(bodyGraphic.MatAt(facing));
                 }
-                else if(bodyCondition == RotDrawMode.Rotting || graphics.dessicatedGraphic == null)
+                else if(bodyCondition == RotDrawMode.Rotting)
                 {
-                    _cachedNakedMatsBodyBase.Add(graphics.rottingGraphic.MatAt(facing));
+                    _cachedNakedMatsBodyBase.Add(bodyGraphic.MatAt(facing));
                 }
                 else if(bodyCondition == RotDrawMode.Dessicated)
                 {
-                    _cachedNakedMatsBodyBase.Add(graphics.dessicatedGraphic.MatAt(facing));
+                    _cachedNakedMatsBodyBase.Add(bodyGraphic.MatAt(facing));
                 }
 
-                for(int i = 0; i < graphics.apparelGraphics.Count; i++)
+                Pawn.Drawer.renderer.renderTree.TraverseTree(node =>
                 {
-                    ApparelLayerDef lastLayer = graphics.apparelGraphics[i].sourceApparel.def.apparel.LastLayer;
-
-                    if(Pawn.Dead)
+                    if (node is PawnRenderNode_Apparel apparelNode)
                     {
-                        if(lastLayer != ApparelLayerDefOf.Shell && lastLayer != ApparelLayerDefOf.Overhead)
+                        ApparelLayerDef lastLayer = apparelNode.apparel.def.apparel.LastLayer;
+
+                        if (Pawn.Dead)
                         {
-                            _cachedNakedMatsBodyBase.Add(graphics.apparelGraphics[i].graphic.MatAt(facing));
+                            if (lastLayer != ApparelLayerDefOf.Shell && lastLayer != ApparelLayerDefOf.Overhead)
+                            {
+                                _cachedNakedMatsBodyBase.Add(apparelNode.GraphicFor(Pawn).MatAt(facing));
+                            }
                         }
                     }
-                }
+                });
             }
 
             return _cachedNakedMatsBodyBase;
@@ -255,13 +216,11 @@
         {
             base.PostDraw();
 
-            // Children & Pregnancy || Werewolves transformed
-            if(Pawn.Map == null || !Pawn.Spawned || Pawn.Dead || Pawn.GetCompAnim().Deactivated)
+            if(Pawn.Map == null || !Pawn.Spawned || Pawn.Dead || Deactivated)
             {
                 return;
             }
             
-            // Tweener
             Vector3Tween eqTween = Vector3Tweens[(int)HarmonyPatchesFS.equipment];
             FloatTween angleTween = AimAngleTween;
             Vector3Tween leftHand = Vector3Tweens[(int)TweenThing.HandLeft];
@@ -291,24 +250,11 @@
                 CheckMovement();
 
                 if(Pawn.IsChild())
-                TickDrawers(Pawn.Rotation, new PawnGraphicSet(Pawn));
-            }
-
-            if(Pawn.IsChild())
-            {
-                float angle = Pawn.Drawer.renderer.BodyAngle();
-                Quaternion bodyQuat = Quaternion.AngleAxis(angle, Vector3.up);
-                Vector3 rootLoc = Pawn.Drawer.DrawPos;
-                if(Controller.settings.UseHands)
-				{
-                    DrawHands(bodyQuat, rootLoc, false, null, false, Pawn.GetBodysizeScaling());
-                }
-
-                if(Controller.settings.UseFeet)
-				{
-                    DrawFeet(bodyQuat, bodyQuat, rootLoc, false);
+                {
+                    TickDrawers(Pawn.Rotation);
                 }
             }
+
         }
 
         public override void PostExposeData()
@@ -361,7 +307,7 @@
             }
         }
 
-        public void TickDrawers(Rot4 bodyFacing, PawnGraphicSet graphics)
+        public void TickDrawers(Rot4 bodyFacing)
         {
             if(!_initialized)
             {
@@ -374,7 +320,7 @@
             int count = PawnBodyDrawers.Count;
             while(i < count)
             {
-                PawnBodyDrawers[i].Tick(bodyFacing, graphics);
+                PawnBodyDrawers[i].Tick(bodyFacing);
                 i++;
             }
         }
@@ -386,42 +332,49 @@
             {
                 _cachedSkinMatsBodyBase.Clear();
                 _cachedSkinMatsBodyBaseHash = num;
-                PawnGraphicSet graphics = Pawn.Drawer.renderer.graphics;
+                
+                var bodyGraphic = Pawn.Drawer.renderer.BodyGraphic;
+                if (bodyGraphic == null) return _cachedSkinMatsBodyBase;
+                
                 if (bodyCondition == RotDrawMode.Fresh)
                 {
-                    _cachedSkinMatsBodyBase.Add(graphics.nakedGraphic.MatAt(facing));
+                    _cachedSkinMatsBodyBase.Add(bodyGraphic.MatAt(facing));
                 }
-                else if (bodyCondition == RotDrawMode.Rotting || graphics.dessicatedGraphic == null)
+                else if (bodyCondition == RotDrawMode.Rotting)
                 {
-                    _cachedSkinMatsBodyBase.Add(graphics.rottingGraphic.MatAt(facing));
+                    _cachedSkinMatsBodyBase.Add(bodyGraphic.MatAt(facing));
                 }
                 else if (bodyCondition == RotDrawMode.Dessicated)
                 {
-                    _cachedSkinMatsBodyBase.Add(graphics.dessicatedGraphic.MatAt(facing));
+                    _cachedSkinMatsBodyBase.Add(bodyGraphic.MatAt(facing));
                 }
 
-                for (int i = 0; i < graphics.apparelGraphics.Count; i++)
+                Pawn.Drawer.renderer.renderTree.TraverseTree(node =>
                 {
-                    ApparelLayerDef lastLayer = graphics.apparelGraphics[i].sourceApparel.def.apparel.LastLayer;
-
-                    if (lastLayer == ApparelLayerDefOf.OnSkin)
+                    if (node is PawnRenderNode_Apparel apparelNode)
                     {
-                        _cachedSkinMatsBodyBase.Add(graphics.apparelGraphics[i].graphic.MatAt(facing));
-                    }
-                }
+                        ApparelLayerDef lastLayer = apparelNode.apparel.def.apparel.LastLayer;
 
-                // One more time to get at least one pieces of cloth
-                if (_cachedSkinMatsBodyBase.Count < 1)
-                {
-                    for (int i = 0; i < graphics.apparelGraphics.Count; i++)
-                    {
-                        ApparelLayerDef lastLayer = graphics.apparelGraphics[i].sourceApparel.def.apparel.LastLayer;
-
-                        if (lastLayer == ApparelLayerDefOf.Middle)
+                        if (lastLayer == ApparelLayerDefOf.OnSkin)
                         {
-                            _cachedSkinMatsBodyBase.Add(graphics.apparelGraphics[i].graphic.MatAt(facing));
+                            _cachedSkinMatsBodyBase.Add(apparelNode.GraphicFor(Pawn).MatAt(facing));
                         }
                     }
+                });
+                if (_cachedSkinMatsBodyBase.Count < 1)
+                {
+                    Pawn.Drawer.renderer.renderTree.TraverseTree(node =>
+                    {
+                        if (node is PawnRenderNode_Apparel apparelNode)
+                        {
+                            ApparelLayerDef lastLayer = apparelNode.apparel.def.apparel.LastLayer;
+
+                            if (lastLayer == ApparelLayerDefOf.Middle)
+                            {
+                                _cachedSkinMatsBodyBase.Add(apparelNode.GraphicFor(Pawn).MatAt(facing));
+                            }
+                        }
+                    });
                 }
             }
 
@@ -434,8 +387,6 @@
         public float BodyAngle;
 
         public float LastAimAngle = 143f;
-
-        // public float lastWeaponAngle = 53f;
         public readonly Vector3[] LastPosition = new Vector3[(int)TweenThing.Max];
 
         public readonly FloatTween AimAngleTween = new FloatTween();
@@ -458,13 +409,11 @@
                 _isMoving = false;
                 return;
             }
-
-            // pawn started pathing
             Pawn_PathFollower pather = Pawn.pather;
             if ((pather != null) && (pather.Moving) && !Pawn.stances.FullBodyBusy
                 && (pather.BuildingBlockingNextPathCell() == null)
                 && (pather.NextCellDoorToWaitForOrManuallyOpen() == null)
-                && !pather.WillCollideWithPawnOnNextPathCell())
+                && !PawnUtility.AnyPawnBlockingPathAt(pather.nextCell, Pawn))
             {
                 _movedPercent = 1f - pather.nextCellCostLeft / pather.nextCellCostTotal;
                 _isMoving = true;

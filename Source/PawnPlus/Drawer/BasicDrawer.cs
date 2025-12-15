@@ -13,7 +13,6 @@
         [NotNull]
         public Pawn Pawn { get; set; }
 
-        [NotNull] protected PawnGraphicSet Graphics;
 
         protected Rot4 BodyFacing;
 
@@ -22,13 +21,6 @@
         #endregion Protected Fields
 
         #region Public Methods
-
-        protected virtual Mesh GetPawnMesh(bool wantsBody, bool portrait)
-        {
-            return wantsBody
-                       ? MeshPool.humanlikeBodySet?.MeshAt(this.BodyFacing)
-                       : MeshPool.humanlikeHeadSet?.MeshAt(this.HeadFacing);
-        }
 
         #endregion Public Methods
 
@@ -97,9 +89,6 @@
             if (rot == Rot4.North)
             {
                 leftY = rightY = -Offsets.YOffset_Behind;
-
-                // leftX *= -1;
-                // rightX *= -1;
             }
 
             joints.RightJoint = new Vector3(rightX, rightY, rightZ);

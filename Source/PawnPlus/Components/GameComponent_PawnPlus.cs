@@ -19,18 +19,12 @@
     public class GameComponent_PawnPlus : GameComponent
     {
         protected Animator animator;
-        
-        private float faceMeshSize;
-
-        public bool ShouldRenderFaceDetails { get; private set; }
 
         #region Public Constructors
         
         public GameComponent_PawnPlus()
         {
         }
-
-        // ReSharper disable once UnusedParameter.Local
         public GameComponent_PawnPlus(Game game)
         {
             WeaponCompsNew();
@@ -38,51 +32,15 @@
             AnimalPawnCompsImportFromAnimationTargetDefs();
             Controller.SetMainButtons();
 
-            // Get head mesh size using reflection. Face mesh size is half of head mesh's.
-            FieldInfo headAvgWidthField = typeof(MeshPool).GetField("HumanlikeHeadAverageWidth", BindingFlags.NonPublic | BindingFlags.Static);
-            if(headAvgWidthField != null)
-			{
-                try
-				{
-                    faceMeshSize = (float)headAvgWidthField.GetValue(null) / 2f;
-                    return;
-                }
-                catch(Exception e)
-				{
-
-				}
-			}
-
-            Log.Message("Pawn Plus: Couldn't retrieve the value MeshPool.HumanlikeHeadAverageWidth. Using the default value of 0.75 for face part culling.");
-            faceMeshSize = 0.75f;
         }
 
         #endregion Public Constructors
 
         #region Public Methods
         
-		public override void GameComponentTick()
+        public override void GameComponentTick()
         {
             base.GameComponentTick();
-
-            // Perform rudimentary distance culling. Don't render if camera isn't zoomed in enough for small facial details.
-            // GameComponentTick() is called before rendering the map. Therefore, this calculation can be done here.
-            if (WorldRendererUtility.CurrentWorldRenderMode == WorldRenderMode.None && Find.CurrentMap != null)
-            {
-                float meshWidth, meshHeight;
-
-                // Since the camera is orthorgraphic, the location of pawn relative to camera doesn't matter - All face mesh 
-                // will be rendered with the same dimension on screen.
-                Vector3 screenCoord = Find.Camera.WorldToScreenPoint(new Vector3(faceMeshSize, 0f, faceMeshSize));
-                float minPixelDim = Mathf.Min(Mathf.Abs(screenCoord.x), Mathf.Abs(screenCoord.y));
-                ShouldRenderFaceDetails = minPixelDim >= 10;
-            }
-            else
-            {
-                // Shouldn't matter because pawns aren't rendered in world view, but just in case. Also, portrait view 
-                // doesn't consider LOD and renders at full detail.
-                ShouldRenderFaceDetails = true;
-            }
         }
 
         public static void BuildWalkCycles([CanBeNull] WalkCycleDef defToRebuild = null)
@@ -113,24 +71,16 @@
                     cycle.BodyAngle = new SimpleCurve();
                     cycle.BodyAngleVertical = new SimpleCurve();
                     cycle.BodyOffsetZ = new SimpleCurve();
-
-                    // cycle.BodyOffsetVerticalZ = new SimpleCurve();
                     cycle.FootAngle = new SimpleCurve();
                     cycle.FootPositionX = new SimpleCurve();
                     cycle.FootPositionZ = new SimpleCurve();
-
-                    // cycle.FootPositionVerticalZ = new SimpleCurve();
                     cycle.HandsSwingAngle = new SimpleCurve();
                     cycle.HandsSwingPosVertical = new SimpleCurve();
                     cycle.ShoulderOffsetHorizontalX = new SimpleCurve();
                     cycle.HipOffsetHorizontalX = new SimpleCurve();
-
-                    // Quadrupeds
                     cycle.FrontPawAngle = new SimpleCurve();
                     cycle.FrontPawPositionX = new SimpleCurve();
                     cycle.FrontPawPositionZ = new SimpleCurve();
-
-                    // cycle.FrontPawPositionVerticalZ = new SimpleCurve();
                     if (cycle.keyframes.NullOrEmpty())
                     {
                         cycle.keyframes = new List<PawnKeyframe>();
@@ -139,8 +89,6 @@
                             cycle.keyframes.Add(new PawnKeyframe(i));
                         }
                     }
-
-                    // Log.Message(cycle.defName + " has " + cycle.animation.Count);
                     foreach (PawnKeyframe key in cycle.keyframes)
                     {
                         BuildAnimationKeys(key, cycle);
@@ -148,11 +96,6 @@
                 }
             }
         }
-
-        /// <summary>
-        /// Pose cycles, currently disabled; needs more work
-        /// </summary>
-        /// <param name="defToRebuild"></param>
         public static void BuildPoseCycles([CanBeNull] PoseCycleDef defToRebuild = null)
         {
             List<PoseCycleDef> cycles = new List<PoseCycleDef>();
@@ -184,13 +127,9 @@
                         cycle.HandsSwingPosVertical = new SimpleCurve();
                         cycle.ShoulderOffsetHorizontalX = new SimpleCurve();
                         cycle.HipOffsetHorizontalX = new SimpleCurve();
-
-                        // Quadrupeds
                         cycle.FrontPawAngle = new SimpleCurve();
                         cycle.FrontPawPositionX = new SimpleCurve();
                         cycle.FrontPawPositionZ = new SimpleCurve();
-
-                        // cycle.FrontPawPositionVerticalZ = new SimpleCurve();
                         if (cycle.keyframes.NullOrEmpty())
                         {
                             cycle.keyframes = new List<PawnKeyframe>();
@@ -199,8 +138,6 @@
                                 cycle.keyframes.Add(new PawnKeyframe(i));
                             }
                         }
-
-                        // Log.Message(cycle.defName + " has " + cycle.animation.Count);
                         if (cycle.keyframes != null)
                         {
                             foreach (PawnKeyframe key in cycle.keyframes)
@@ -228,8 +165,6 @@
             float autoFrames = (float)key.KeyIndex / (autoKeys.Count - 1);
 
             float frameAt;
-
-            // Distribute manual keys
             if (!manualKeys.NullOrEmpty())
             {
                 frameAt = (float)key.KeyIndex / (autoKeys.Count - 1);
@@ -316,8 +251,6 @@
             float autoFrames = (float)key.KeyIndex / (autoKeys.Count - 1);
 
             float frameAt;
-
-            // Distribute manual keys
             if (!manualKeys.NullOrEmpty())
             {
                 frameAt = (float)key.KeyIndex / (autoKeys.Count - 1);
@@ -415,7 +348,6 @@
             }
             else
             {
-                // No value at 0 => add points to prevent the curve from bugging out
                 if (key.KeyIndex == 0)
                 {
                     simpleCurve.Add(0, 0);
@@ -450,7 +382,6 @@
 
         private void WeaponCompsNew()
         {
-            // ReSharper disable once PossibleNullReferenceException
             foreach (WeaponExtensionDef weaponExtensionDef in DefDatabase<WeaponExtensionDef>.AllDefsListForReading)
             {
                 ThingDef thingDef;
@@ -493,7 +424,6 @@
 
         private void AnimalPawnCompsImportFromAnimationTargetDefs()
         {
-            // ReSharper disable once PossibleNullReferenceException
             foreach (AnimationTargetDef def in DefDatabase<AnimationTargetDef>.AllDefsListForReading)
             {
                 if (def.CompLoaderTargets.NullOrEmpty())
@@ -520,9 +450,6 @@
                         {
                             continue;
                         }
-
-                        // if (DefDatabase<BodyAnimDef>
-                        // .AllDefsListForReading.Any(x => x.defName.Contains(thingDef.defName))) continue;
                         if (thingDef.HasComp(typeof(CompBodyAnimator)))
                         {
                             continue;
@@ -533,9 +460,6 @@
                                                                            compClass = typeof(CompBodyAnimator),
                                                                            bodyDrawers = pawnSets.bodyDrawers,
                                                                            handType = pawnSets.handType,
-
-                                                                           // footType = pawnSets.footType,
-                                                                           // pawType = pawnSets.pawType,
                                                                            quadruped = pawnSets.quadruped,
                                                                            bipedWithHands = pawnSets.bipedWithHands
                                                                        };
@@ -549,7 +473,6 @@
 
         private void AnimalPawnCompsBodyDefImport()
         {
-            // ReSharper disable once PossibleNullReferenceException
             foreach (BodyAnimDef def in DefDatabase<BodyAnimDef>.AllDefsListForReading)
             {
                 string target = def.thingTarget;
@@ -563,9 +486,6 @@
                 {
                     continue;
                 }
-
-                // if (DefDatabase<BodyAnimDef>
-                // .AllDefsListForReading.Any(x => x.defName.Contains(thingDef.defName))) continue;
                 if (thingDef.HasComp(typeof(CompBodyAnimator)))
                 {
                     continue;
@@ -576,9 +496,6 @@
                                                                    compClass = typeof(CompBodyAnimator),
                                                                    bodyDrawers = def.bodyDrawers,
                                                                    handType = def.handType,
-
-                                                                   // footType = def.footType,
-                                                                   // pawType = def.pawType,
                                                                    quadruped = def.quadruped,
                                                                    bipedWithHands = def.bipedWithHands
                                                                };
